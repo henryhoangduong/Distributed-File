@@ -1,20 +1,29 @@
 package p2p
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"sync"
 )
 
+type TCPPeer struct {
+	conn     net.Conn
+	outbound bool
+}
+
 type TCPTransport struct {
 	listenAddress string
 	listener      net.Listener
+	handshakeFunc HandshakeFunc
+	decoder       Decoder
 	mu            sync.RWMutex
 	peers         map[net.Addr]Peer
 }
 
 func NewTCPTransport(listenAddr string) *TCPTransport {
 	return &TCPTransport{
+		handshakeFunc: func(any) error { return nil },
 		listenAddress: listenAddr,
 	}
 }
@@ -39,6 +48,21 @@ func (t *TCPTransport) startAcceptLoop() {
 	}
 }
 
+type Temp struct{}
+
 func (t *TCPTransport) handleConn(conn net.Conn) {
-	fmt.Printf("new incoming connection %+v\n", conn)
+	peer := NewTCPPeer(conn, true)
+	if err := t.handshakeFunc(conn); err != nil {
+	}
+	buf := new(bytes.Buffer)
+	for {
+		t.decoder.Decode()
+	}
+	fmt.Printf("new incoming connection %+v\n", peer)
+}
+func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
+	return &TCPPeer{
+		conn:     conn,
+		outbound: outbound,
+	}
 }
