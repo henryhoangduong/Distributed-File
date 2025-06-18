@@ -35,7 +35,7 @@ func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 
 func (t *TCPTransport) ListenAndAccept() error {
 	var err error
-	t.listener, err = net.Listen("tcp", t.listenAddress)
+	t.listener, err = net.Listen("tcp", t.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -53,23 +53,20 @@ func (t *TCPTransport) startAcceptLoop() {
 	}
 }
 
-type Temp struct{}
-
 func (t *TCPTransport) handleConn(conn net.Conn) {
 	peer := NewTCPPeer(conn, true)
 	if err := t.HandshakeFunc(peer); err != nil {
 		conn.Close()
 		fmt.Printf("TCP handshake error: %s\n", err)
-
 		return
 	}
 	msg := &Message{}
 	for {
 		if err := t.Decoder.Decode(conn, msg); err != nil {
-			fmt.Printf("TCP error %s\n", err)
+			fmt.Printf("TCP error: %s\n", err)
 			continue
 		}
-		fmt.Printf("message: %+v\n", msg)
+		fmt.Printf("Message: %+v\n", msg)
 
 	}
 }
