@@ -12,6 +12,12 @@ type TCPTransportOpts struct {
 	Decoder       Decoder
 }
 
+func (t *TCPTransport) Consume() <-chan RPC {
+	return t.rpcch
+}
+func (t *TCPTransportOpts) Close() error{
+	
+}
 type TCPPeer struct {
 	conn     net.Conn
 	outbound bool
@@ -21,15 +27,16 @@ type TCPTransport struct {
 	TCPTransportOpts
 	listenAddress string
 	listener      net.Listener
-
-	decoder Decoder
-	mu      sync.RWMutex
-	peers   map[net.Addr]Peer
+	rpcch         chan RPC
+	decoder       Decoder
+	mu            sync.RWMutex
+	peers         map[net.Addr]Peer
 }
 
 func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 	return &TCPTransport{
 		TCPTransportOpts: opts,
+		rpcch:            make(chan RPC),
 	}
 }
 
@@ -60,14 +67,14 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 		fmt.Printf("TCP handshake error: %s\n", err)
 		return
 	}
-	msg := &Message{}
+	rpc := &RPC{}
 	for {
-		if err := t.Decoder.Decode(conn, msg); err != nil {
+		if err := t.Decoder.Decode(conn, rpc); err != nil {
 			fmt.Printf("TCP error: %s\n", err)
 			continue
 		}
-		fmt.Printf("Message: %+v\n", msg)
-
+		rpc.From = conn.RemoteAddr()
+		t.rpcch <- rpc
 	}
 }
 func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
